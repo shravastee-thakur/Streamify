@@ -4,10 +4,15 @@ import { users } from "../db/schema/userSchema.js";
 import { InferSelectModel, InferInsertModel } from "drizzle-orm";
 
 export type UserDocument = InferSelectModel<typeof users>;
-export type CreateUserData = InferInsertModel<typeof users>;
+export type BaseData = InferInsertModel<typeof users>;
+
+export type CreateUserData = Pick<
+  BaseData,
+  "username" | "email" | "fullname" | "password"
+>;
 
 export type UpdateUserData = Pick<
-  Partial<CreateUserData>,
+  Partial<BaseData>,
   "username" | "fullname" | "avatar" | "coverImage"
 >;
 
