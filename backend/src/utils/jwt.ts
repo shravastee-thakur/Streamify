@@ -9,7 +9,7 @@ export interface TokenPayload {
 const accessSecret = env.ACCESS_SECRET;
 const refreshSecret = env.REFRESH_SECRET;
 if (!accessSecret || !refreshSecret) {
-  throw new ApiError(401, "environment variables are not defined");
+  throw new ApiError(500, "environment variables are not defined");
 }
 
 export const generateAccessToken = (payload: TokenPayload) => {
@@ -17,7 +17,7 @@ export const generateAccessToken = (payload: TokenPayload) => {
 };
 
 export const generateRefreshToken = (payload: TokenPayload) => {
-  return jwt.sign(payload, accessSecret, { expiresIn: "7d" });
+  return jwt.sign(payload, refreshSecret, { expiresIn: "7d" });
 };
 
 export const verifyAccessToken = (token: string): TokenPayload => {

@@ -75,3 +75,10 @@ export const updateUser = async (
 
   return user;
 };
+
+export const updateRefreshToken = async (
+  id: string,
+  token: string | null,
+): Promise<void> => {
+  await db.update(users).set({ refreshToken: token }).where(eq(users.id, id));
+};
