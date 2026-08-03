@@ -1,5 +1,4 @@
 import { createHash, timingSafeEqual } from "crypto";
-import { uploadImageToCloudinary } from "../config/cloudinary.js";
 import * as userRepo from "../repositories/userRepo.js";
 import { UserDocument } from "../repositories/userRepo.js";
 import { ApiError } from "../utils/apiError.js";
@@ -15,8 +14,7 @@ import {
   UpdateProfileInput,
 } from "../validators/authValidator.js";
 import bcrypt from "bcrypt";
-import logger from "../utils/logger.js";
-import { v2 as cloudinary } from "cloudinary";
+import { deleteImage, CloudImage, uploadImage } from "./storageService.js";
 
 interface UpdateFiles {
   avatar?: Buffer;
@@ -144,70 +142,33 @@ export const updateUser = async (
   const user = await userRepo.findById(userId);
   if (!user) throw new ApiError(404, "User not found");
 
-  let newAvatar = user.avatar;
-  let newCoverImage = user.coverImage;
+  const updatePayload: Partial<UserDocument> = { ...userData };
 
   if (files.avatar) {
     if (user?.avatar?.publicId) {
-      try {
-        const deleteResult = await cloudinary.uploader.destroy(
-          user.avatar?.publicId,
-          { invalidate: true },
-        );
-        logger.info(
-          `Cloudinary delete result: ${JSON.stringify(deleteResult)}`,
-        );
-        if (deleteResult.result !== "ok") {
-          logger.warn(
-            `Failed to delete image. Public ID: ${user.avatar.publicId}. Result: ${deleteResult.result}`,
-          );
-        }
-      } catch (cloudinaryError) {
-        logger.error(
-          `Error deleting old image from Cloudinary: ${(cloudinaryError as Error).message}`,
-        );
-      }
+      await deleteImage(user.avatar.publicId);
     }
-    const uploadImage = await uploadImageToCloudinary(files.avatar);
-    userData.avatar = {
-      url: uploadImage.url,
-      publicId: uploadImage.public_id,
+    const uploaded: CloudImage = await uploadImage(files.avatar);
+    updatePayload.avatar = {
+      url: uploaded.url,
+      publicId: uploaded.publicId,
     };
   }
 
   if (files.coverImage) {
     if (user?.coverImage?.publicId) {
-      try {
-        const deleteResult = await cloudinary.uploader.destroy(
-          user.coverImage?.publicId,
-          { invalidate: true },
-        );
-        logger.info(
-          `Cloudinary delete result: ${JSON.stringify(deleteResult)}`,
-        );
-        if (deleteResult.result !== "ok") {
-          logger.warn(
-            `Failed to delete image. Public ID: ${user.coverImage.publicId}. Result: ${deleteResult.result}`,
-          );
-        }
-      } catch (cloudinaryError) {
-        logger.error(
-          `Error deleting old image from Cloudinary: ${(cloudinaryError as Error).message}`,
-        );
-      }
+      await deleteImage(user.coverImage.publicId);
     }
-    const uploadImage = await uploadImageToCloudinary(files.coverImage);
+    const uploaded: CloudImage = await uploadImage(files.coverImage);
     userData.coverImage = {
-      url: uploadImage.url,
-      publicId: uploadImage.public_id,
+      url: uploaded.url,
+      publicId: uploaded.publicId,
     };
   }
 
-  const updatePayload = {
-    ...userData,
-    avatar: newAvatar,
-    coverImage: newCoverImage,
-  };
+  if (Object.keys(updatePayload).length === 0) {
+    return formatUserResponse(user);
+  }
 
   const updatedUser = await userRepo.updateUser(userId, updatePayload);
 
