@@ -160,7 +160,7 @@ export const updateUser = async (
       await deleteImage(user.coverImage.publicId);
     }
     const uploaded: CloudImage = await uploadImage(files.coverImage);
-    userData.coverImage = {
+    updatePayload.coverImage = {
       url: uploaded.url,
       publicId: uploaded.publicId,
     };

@@ -11,7 +11,7 @@ export const uploadImage = async (file: Buffer): Promise<CloudImage> => {
     const stream = cloudinary.uploader.upload_stream(
       {
         resource_type: "image",
-        folder: "CineFlow",
+        folder: "Streamify",
       },
       (error, result) => {
         if (error) {
